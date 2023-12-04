@@ -34,33 +34,51 @@ if (VULKAN_SDK)
 endif()
 
 set(VSG_MIN_VERSION 1.1.0)
+find_package(vsg ${VSG_MIN_VERSION})
+if (NOT vsg_FOUND)
+  FetchContent_Declare(vsg
+    GIT_REPOSITORY https://github.com/vsg-dev/VulkanSceneGraph.git
+    GIT_TAG master
+    GIT_PROGRESS TRUE
+    FIND_PACKAGE_ARGS ${VSG_MIN_VERSION}
+  )
 
-FetchContent_Declare(vsg
-  GIT_REPOSITORY https://github.com/vsg-dev/VulkanSceneGraph.git
-  GIT_TAG master
-  GIT_PROGRESS TRUE
-  FIND_PACKAGE_ARGS ${VSG_MIN_VERSION}
-)
-
-FetchContent_MakeAvailable(vsg)
-# find_package(vsg) includes vsgMacros
-if (vsg_SOURCE_DIR)
-  SET(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${vsg_SOURCE_DIR}/cmake")
-  include("vsgMacros")
+  FetchContent_MakeAvailable(vsg)
+  # find_package(vsg) includes vsgMacros
+  if (vsg_SOURCE_DIR)
+    SET(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${vsg_SOURCE_DIR}/cmake")
+    include("vsgMacros")
+  endif()
+else()
+  vsg_setup_dir_vars()
+  vsg_setup_build_vars()
 endif()
 
-find_package(vsgXchange)
+set(VSGXCHANGE_MIN_VERSION 1.0.5)
+find_package(vsgXchange ${VSGXCHANGE_MIN_VERSION})
+if (NOT vsgXchange_FOUND)
+  FetchContent_Declare(vsgXchange
+    GIT_REPOSITORY https://github.com/vsg-dev/vsgXchange.git
+    GIT_TAG master
+    GIT_PROGRESS TRUE
+    FIND_PACKAGE_ARGS ${VSGXCHANGE_MIN_VERSION}
+  )
+
+  FetchContent_MakeAvailable(vsgXchange)
+endif()
 
 set(VSGIMGUI_MIN_VERSION 0.1.0)
+find_package(vsgImGui ${VSGIMGUI_MIN_VERSION})
+if (NOT vsgImGui_FOUND)
+  FetchContent_Declare(vsgImGui
+    GIT_REPOSITORY https://github.com/vsg-dev/vsgImGui.git
+    GIT_TAG v0.1.0
+    GIT_PROGRESS TRUE
+    FIND_PACKAGE_ARGS ${VSGIMGUI_MIN_VERSION}
+  )
 
-FetchContent_Declare(vsgImGui
-  GIT_REPOSITORY https://github.com/vsg-dev/vsgImGui.git
-  GIT_TAG v0.1.0
-  GIT_PROGRESS TRUE
-  FIND_PACKAGE_ARGS ${VSGIMGUI_MIN_VERSION}
-)
-
-FetchContent_MakeAvailable(vsgImGui)
+  FetchContent_MakeAvailable(vsgImGui)
+endif()
 
 # Wrangle Cesium's dependencies into shape i.e., install them!
 option(GSL_INSTALL "Generate and install GSL target" ON)
@@ -81,8 +99,6 @@ if (RUN_CLANG_TIDY)
 endif()
 
 vsgCs_setup_build_vars()
-# This does include(GNUInstallDirs), which sets up all the correct install directories.
-vsg_setup_dir_vars()
 
 set(GENERATED_HEADERS_DIR "${PROJECT_BINARY_DIR}/include")
 
