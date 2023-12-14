@@ -6,10 +6,12 @@ set(LIB_PUBLIC_HEADERS
   accessorUtils.h
   accessor_traits.h
   ${GENERATED_HEADERS_DIR}/vsgCs/Config.h
+  CRS.h
   CsDebugColorizeTilesOverlay.h
   CsOverlay.h
   CesiumGltfBuilder.h
   Export.h
+  GeoNode.h
   GeospatialServices.h
   GraphicsEnvironment.h
   jsonUtils.h
@@ -26,10 +28,12 @@ set(LIB_PUBLIC_HEADERS
 
 set(SOURCES
   ${LIB_PUBLIC_HEADERS}
+  CRS.cpp
   CsDebugColorizeTilesOverlay.cpp
   CsOverlay.cpp
   CesiumGltfBuilder.cpp
   CompilableImage.cpp
+  GeoNode.cpp
   GeospatialServices.cpp
   GraphicsEnvironment.cpp
   jsonUtils.cpp
@@ -70,7 +74,7 @@ endif()
 
 target_compile_definitions(${LIB_NAME} PUBLIC SPDLOG_COMPILED_LIB)
 
-target_link_libraries(${LIB_NAME} PUBLIC vsg::vsg vsgImGui::vsgImGui Cesium3DTilesSelection CesiumGltfReader CesiumGltf spdlog PRIVATE CURL::libcurl)
+target_link_libraries(${LIB_NAME} PUBLIC vsg::vsg vsgImGui::vsgImGui Cesium3DTilesSelection CesiumGltfReader CesiumGltf spdlog PRIVATE CURL::libcurl PROJ::proj)
 
 if(TRACY_ENABLE)
   target_link_libraries(${LIB_NAME} PUBLIC Tracy::TracyClient)
@@ -84,5 +88,5 @@ install(TARGETS ${LIB_NAME} EXPORT vsgCsTargets
   )
 
 if(WIN32)
-  install(IMPORTED_RUNTIME_ARTIFACTS CURL::libcurl)
+  install(IMPORTED_RUNTIME_ARTIFACTS CURL::libcurl_shared)
 endif()

@@ -47,6 +47,7 @@ SOFTWARE.
 
 #include "vsgCs/TilesetNode.h"
 #include "vsgCs/CsOverlay.h"
+#include "vsgCs/GeoNode.h"
 #include "vsgCs/jsonUtils.h"
 #include "vsgCs/OpThreadTaskProcessor.h"
 #include "vsgCs/Tracing.h"
@@ -166,17 +167,20 @@ int main(int argc, char** argv)
             directionalLight->shadowMaps = shadowMaps;
             vsg_scene->addChild(directionalLight);
         }
-
-        // Read any vsg files. This application's coordinate system is WGS84 ECEF, with Z pointing
-        // towards north, so an arbitrary model is not going to show up in a useful position.
+        vsg::ref_ptr<vsg::StateGroup> modelRoot;
+        if (argc > 1)
+        {
+            modelRoot = createModelRoot(environment);
+        }
+        // Read GeoNode json files
         for (int i = 1; i < argc; ++i)
         {
             vsg::Path filename = arguments[i];
-
-            auto object = vsg::read(filename, environment->options);
-            if (auto node = object.cast<vsg::Node>(); node)
+            auto jsonSource = vsgCs::readFile(filename, environment->options);
+            auto object = vsgCs::JSONObjectFactory::get()->buildFromSource(jsonSource);
+            if (auto node = vsgCs::ref_ptr_cast<vsg::Node>(object))
             {
-                vsg_scene->addChild(node);
+                modelRoot->addChild(node);
             }
             else if (object)
             {
@@ -211,6 +215,10 @@ int main(int argc, char** argv)
         auto ellipsoidModel = vsg::EllipsoidModel::create();
         worldNode->setObject("EllipsoidModel", ellipsoidModel);
         vsg_scene->addChild(worldNode);
+        if (modelRoot)
+        {
+            vsg_scene->addChild(modelRoot);
+        }
         viewer->addWindow(window);
         // vsgCS::RuntimeEnvironment needs the vsg::Viewer object for creation of Vulkan objects
         environment->setViewer(viewer);

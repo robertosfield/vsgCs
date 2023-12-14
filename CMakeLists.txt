@@ -49,7 +49,7 @@ if (vsg_SOURCE_DIR)
   include("vsgMacros")
 endif()
 
-#find_package(vsgXchange)
+find_package(vsgXchange)
 
 set(VSGIMGUI_MIN_VERSION 0.1.0)
 
@@ -72,6 +72,8 @@ FetchContent_Declare(Cesium
 
 message("Fetching cesium-native. This could take a while...")
 FetchContent_MakeAvailable(Cesium)
+
+find_package(PROJ REQUIRED)
 
 if (RUN_CLANG_TIDY)
   find_program(CLANG_TIDY_EXE NAMES "clang-tidy")
