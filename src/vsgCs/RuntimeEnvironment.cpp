@@ -25,6 +25,7 @@ SOFTWARE.
 #include "RuntimeEnvironment.h"
 
 #include "OpThreadTaskProcessor.h"
+#include "Tracing.h"
 #include "UrlAssetAccessor.h"
 #include "vsgResourcePreparer.h"
 
@@ -37,6 +38,29 @@ SOFTWARE.
 #include <spdlog/spdlog.h>
 
 using namespace vsgCs;
+
+namespace
+{
+    bool readBooleanArgument(vsg::CommandLine &arguments, const std::string& arg, bool defaultValue)
+    {
+        std::string trueArg = "--" + arg;
+        std::string falseArg = "--no-" + arg;
+        if (arguments.read(trueArg))
+        {
+            return true;
+        }
+        if (arguments.read(falseArg))
+        {
+            return false;
+        }
+        return defaultValue;
+    }
+}
+
+RuntimeEnvironment::RuntimeEnvironment()
+    : tracyContext(TracyContextValue::create())
+{
+}
 
 vsg::ref_ptr<vsg::Options> RuntimeEnvironment::initializeOptions(vsg::CommandLine &arguments,
                                                                  const vsg::ref_ptr<vsg::Options>& in_options)
@@ -114,6 +138,28 @@ void RuntimeEnvironment::initializeCs(vsg::CommandLine& arguments)
     }
     generateShaderDebugInfo = arguments.read("--shader-debug-info");
     enableLodTransitionPeriod = arguments.read("--lod-transition");
+
+    bool tracyDefault = false;
+#ifdef TRACY_ENABLE
+    tracyDefault = true;
+#endif
+    bool tracyTracing = readBooleanArgument(arguments, "tracy-tracing", tracyDefault);
+    bool gpuProfiling = readBooleanArgument(arguments, "gpu-profiling", false);
+#ifdef TRACY_ENABLE
+    if (tracyTracing)
+    {
+        tracyContext->tracingMask = ~0;
+    }
+    if (gpuProfiling)
+    {
+        tracyContext->gpuProfilingMask =~0;
+    }
+#else
+    if (tracyTracing || gpuProfiling)
+    {
+        vsg::warn("Tracy is not enabled in this build.");
+    }
+#endif
 }
 
 void RuntimeEnvironment::initialize(vsg::CommandLine &arguments,
@@ -250,7 +296,19 @@ DeviceFeatures RuntimeEnvironment::prepareFeaturesAndExtensions(const vsg::ref_p
     {
         std::fill(&features.pointSizeRange[0], &features.pointSizeRange[2], 1.0f);
     }
-
+#ifdef TRACY_ENABLE
+    for (VkExtensionProperties extension : extensionProperties)
+    {
+        if (!strcmp(extension.extensionName, VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME))
+        {
+            traits->deviceExtensionNames.push_back(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME);
+            vsg::ref_ptr<vsg::Instance> instance = physDevice->getInstance();
+            instance->getProcAddr(features.vkGetPhysicalDeviceCalibrateableTimeDomainsEXT,
+                                  "vkGetPhysicalDeviceCalibrateableTimeDomainsEXT");
+            instance->getProcAddr(features.vkGetCalibratedTimestampsEXT, "vkGetCalibratedTimestampsEXT");
+        }
+    }
+#endif
     return features;
 }
 
@@ -281,7 +339,19 @@ vsg::ref_ptr<vsg::Window> RuntimeEnvironment::openWindow(vsg::CommandLine& argum
     prepareFeaturesAndExtensions(result);
     initGraphicsEnvironment(result->getOrCreateDevice());
     return result;
-    
+}
+
+void RuntimeEnvironment::initializeFromWindow(const vsg::ref_ptr<vsg::Window>& window,
+                                  const vsg::ref_ptr<vsg::Options>& in_options)
+{
+    traits = window->traits();
+    if (traits->swapchainPreferences.surfaceFormat.format != VK_FORMAT_B8G8R8A8_SRGB)
+    {
+        vsg::warn("Window for vsgCs does not have an SRGB surface format.");
+    }
+    options = in_options;
+    prepareFeaturesAndExtensions(window);
+    initGraphicsEnvironment(window->getOrCreateDevice());
 }
 
 void RuntimeEnvironment::setViewer(const vsg::ref_ptr<vsg::Viewer>& viewer)
@@ -325,7 +395,7 @@ std::shared_ptr<Cesium3DTilesSelection::TilesetExternals> RuntimeEnvironment::ge
     }
     const CesiumAsync::AsyncSystem& asyncSystem = getAsyncSystem();
     auto resourcePreparer = std::make_shared<vsgResourcePreparer>(genv);
-    auto creditSystem = std::make_shared<Cesium3DTilesSelection::CreditSystem>();
+    auto creditSystem = std::make_shared<CesiumUtility::CreditSystem>();
     using TE = Cesium3DTilesSelection::TilesetExternals;
     return _externals
         = std::shared_ptr<TE>(new TE{assetAccessor, resourcePreparer, asyncSystem, creditSystem,

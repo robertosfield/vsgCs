@@ -18,10 +18,11 @@ include("vsgCsMacros")
 # set the use of C++17 globally as all examples require it
 set(CMAKE_CXX_STANDARD 17)
 
-# template madness
-
 if (MSVC)
-    add_compile_options(/bigobj)
+  # template madness
+  add_compile_options(/bigobj)
+  # windows.h madness
+  add_compile_definitions(NOGDI)
 endif()
 
 option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
@@ -63,15 +64,17 @@ FetchContent_Declare(vsgImGui
 FetchContent_MakeAvailable(vsgImGui)
 
 # Wrangle Cesium's dependencies into shape i.e., install them!
+option(CESIUM_SPDLOG_HEADER_ONLY "Whether to use the header-only version of spdlog." OFF)
 option(GSL_INSTALL "Generate and install GSL target" ON)
-FetchContent_Declare(Cesium
+# XXX Not ready for cesium-native as a package yet...
+FetchContent_Declare(cesium-native
   GIT_REPOSITORY https://github.com/timoore/cesium-native.git
-  GIT_TAG c1b1c737a14620efc7e043d39272a23942d10386  # cmake-fixes
+  GIT_TAG 32309b09de1a9e0860e647fa4900c1491d74c85b  # cmake-fixes
   GIT_PROGRESS TRUE
 )
 
 message("Fetching cesium-native. This could take a while...")
-FetchContent_MakeAvailable(Cesium)
+FetchContent_MakeAvailable(cesium-native)
 
 find_package(PROJ REQUIRED)
 
@@ -129,5 +132,6 @@ if (BUILD_TRACY)
   option ( TRACY_ENABLE "" ON)
   option ( TRACY_ON_DEMAND "" ON)
   add_subdirectory(3rdparty/tracy)
+  set_target_properties(TracyClient PROPERTIES COMPILE_WARNING_AS_ERROR OFF)
 endif()
 

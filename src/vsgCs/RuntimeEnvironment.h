@@ -34,6 +34,7 @@ SOFTWARE.
 namespace vsgCs
 {
 
+    class TracyContextValue;
 
     /**
      * Objects that are needed by vsgCs for initializing VSG, Vulkan, Cesium Ion...
@@ -41,6 +42,7 @@ namespace vsgCs
     class VSGCS_EXPORT RuntimeEnvironment : public vsg::Inherit<vsg::Object, RuntimeEnvironment>
     {
     public:
+        RuntimeEnvironment();
         vsg::ref_ptr<vsg::Options> initializeOptions(vsg::CommandLine& arguments,
                                                      const vsg::ref_ptr<vsg::Options>& options= {});
         vsg::ref_ptr<vsg::WindowTraits> initializeTraits(vsg::CommandLine& arguments,
@@ -82,6 +84,14 @@ namespace vsgCs
         vsg::ref_ptr<vsg::Window> openWindow(vsg::CommandLine& arguments, const std::string& name,
                                              const vsg::ref_ptr<vsg::WindowTraits>& traits = {},
                                              const vsg::ref_ptr<vsg::Options>& options = {});
+
+        /**
+         * Prepare the window traits / features / extensions for an existing window and initialize
+         * environment.
+         */
+        void initializeFromWindow(const vsg::ref_ptr<vsg::Window>& window,
+                                  const vsg::ref_ptr<vsg::Options>& options = {});
+
         /**
          * @brief Set the viewer object.
          *
@@ -131,6 +141,7 @@ namespace vsgCs
         bool generateShaderDebugInfo = false;
         bool enableLodTransitionPeriod = false;
         vsg::ref_ptr<GraphicsEnvironment> genv;
+        vsg::ref_ptr<TracyContextValue> tracyContext;
         static vsg::ref_ptr<RuntimeEnvironment> get();
     protected:
         std::shared_ptr<Cesium3DTilesSelection::TilesetExternals> _externals;
