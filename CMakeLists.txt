@@ -34,33 +34,12 @@ if (VULKAN_SDK)
 endif()
 
 set(VSG_MIN_VERSION 1.1.0)
-
-FetchContent_Declare(vsg
-  GIT_REPOSITORY https://github.com/vsg-dev/VulkanSceneGraph.git
-  GIT_TAG master
-  GIT_PROGRESS TRUE
-  FIND_PACKAGE_ARGS ${VSG_MIN_VERSION}
-)
-
-FetchContent_MakeAvailable(vsg)
-# find_package(vsg) includes vsgMacros
-if (vsg_SOURCE_DIR)
-  SET(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${vsg_SOURCE_DIR}/cmake")
-  include("vsgMacros")
-endif()
-
-find_package(vsgXchange)
-
+set(VSGXCHANGE_MIN_VERSION 1.0.5)
 set(VSGIMGUI_MIN_VERSION 0.1.0)
 
-FetchContent_Declare(vsgImGui
-  GIT_REPOSITORY https://github.com/vsg-dev/vsgImGui.git
-  GIT_TAG v0.1.0
-  GIT_PROGRESS TRUE
-  FIND_PACKAGE_ARGS ${VSGIMGUI_MIN_VERSION}
-)
-
-FetchContent_MakeAvailable(vsgImGui)
+find_package(vsg ${VSG_MIN_VERSION})
+find_package(vsgXchange ${VSGXCHANGE_MIN_VERSION})
+find_package(vsgImGui ${VSGIMGUI_MIN_VERSION})
 
 # Wrangle Cesium's dependencies into shape i.e., install them!
 option(GSL_INSTALL "Generate and install GSL target" ON)
@@ -129,5 +108,6 @@ if (BUILD_TRACY)
   option ( TRACY_ENABLE "" ON)
   option ( TRACY_ON_DEMAND "" ON)
   add_subdirectory(3rdparty/tracy)
+  set_target_properties(TracyClient PROPERTIES COMPILE_WARNING_AS_ERROR OFF)
 endif()
 
