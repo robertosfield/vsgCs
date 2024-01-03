@@ -24,29 +24,31 @@ SOFTWARE.
 
 #pragma once
 
-#include "CRS.h"
 #include "Export.h"
 #include "RuntimeEnvironment.h"
 
-#include <vsg/maths/vec3.h>
-#include <vsg/nodes/MatrixTransform.h>
-#include <vsg/nodes/StateGroup.h>
+#include <CesiumAsync/Future.h>
+#include <CesiumGltfReader/GltfReader.h>
 
-#include <memory>
-#include <string>
+#include <vsg/io/ReaderWriter.h>
 
 namespace vsgCs
 {
-    class VSGCS_EXPORT GeoNode : public vsg::Inherit<vsg::MatrixTransform, GeoNode>
+
+    class VSGCS_EXPORT GltfLoader : public vsg::Inherit<vsg::ReaderWriter, GltfLoader>
     {
     public:
-        GeoNode(const std::string& crs = "epsg:4979");
-        void setOrigin(const vsg::dvec3& origin);
-        vsg::dvec3 getOrigin() const;
+        GltfLoader(vsg::ref_ptr<RuntimeEnvironment> in_env = RuntimeEnvironment::get());
+        vsg::ref_ptr<vsg::Object>
+            read(const vsg::Path& /*filename*/, vsg::ref_ptr<const vsg::Options> = {}) const override;
     protected:
-        std::shared_ptr<CRS> _crs;
-        vsg::dvec3 _origin;
+        struct ReadGltfResult
+        {
+            vsg::ref_ptr<vsg::Node> node;
+            std::vector<std::string> errors;
+        };
+        CesiumAsync::Future<ReadGltfResult> loadGltfNode(std::string uri) const;
+        vsg::ref_ptr<RuntimeEnvironment> env;
+        CesiumGltfReader::GltfReader reader;
     };
-
-    vsg::ref_ptr<vsg::StateGroup> VSGCS_EXPORT createModelRoot(const vsg::ref_ptr<RuntimeEnvironment>& env);
 }

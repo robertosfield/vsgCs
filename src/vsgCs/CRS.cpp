@@ -33,6 +33,7 @@ SOFTWARE.
 
 #include "runtimeSupport.h"
 
+#include <vsg/maths/transform.h>
 #include <vsg/io/Logger.h>
 
 #include <CesiumGeospatial/Ellipsoid.h>
@@ -44,7 +45,7 @@ SOFTWARE.
 
 namespace vsgCs
 {
-    void redirect_proj_log(void* user, int level, const char* msg)
+    void redirect_proj_log(void*, int, const char* msg)
     {
         if (msg)
         {
@@ -454,6 +455,21 @@ namespace vsgCs
 
     };
 
+    // A no-op CRS. Either the coordinates are ECEF (x, y, z), or there isn't actually a globe.
+    class EPSG4978 : public CRS::ConversionOperation
+    {
+    public:
+        vsg::dvec3 getECEF(const vsg::dvec3& coord) override
+        {
+            return coord;
+        }
+
+        vsg::dmat4 getENU(const vsg::dvec3& coord) override
+        {
+            return vsg::translate(coord);
+        }
+    };
+
     // Bog-standard WGS84 longitude, latitude, height to ECEF
     class EPSG4979 : public CRS::ConversionOperation
     {
@@ -528,6 +544,10 @@ namespace vsgCs
 
     CRS::CRS(const std::string& name)
     {
+        if (name == "epsg:4978" || name == "null")
+        {
+            _converter = std::make_shared<EPSG4978>();
+        }
         if (name == "epsg:4979" || name == "wgs84")
         {
             _converter = std::make_shared<EPSG4979>();
